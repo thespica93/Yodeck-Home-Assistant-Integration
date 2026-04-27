@@ -1,12 +1,12 @@
 {
   "domain": "yodeck",
   "name": "YoDeck",
-  "codeowners": ["@yourusername"],
+  "codeowners": ["@thespica93"],
   "config_flow": true,
-  "documentation": "https://github.com/yourusername/yodeck-ha",
+  "documentation": "https://github.com/thespica93/Yodeck-Home-Assistant-Integration",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/yourusername/yodeck-ha/issues",
+  "issue_tracker": "https://github.com/thespica93/Yodeck-Home-Assistant-Integration/issues",
   "requirements": ["aiohttp>=3.8.0"],
   "version": "0.1.0"
 }
