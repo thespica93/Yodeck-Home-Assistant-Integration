@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up YoDeck",
+        "description": "Enter your YoDeck API token to connect your schedules to Home Assistant.\n\nUpdate Interval: How often to fetch data (in seconds). Default is 3600 (60 minutes). Minimum is 300 (5 minutes).",
+        "data": {
+          "api_token": "API Token",
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid API token. Please check your token and try again.",
+      "cannot_connect": "Unable to connect to YoDeck API. Please check your internet connection.",
+      "unknown": "An unexpected error occurred. Please try again.",
+      "scan_interval_too_low": "Scan interval must be at least {min_interval} minutes to respect API rate limits."
+    },
+    "abort": {
+      "already_configured": "This YoDeck account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "YoDeck Options",
+        "description": "Configure how often to fetch data from YoDeck API.\n\n⚠️ Warning: Setting this too low may hit rate limits. Minimum: {min_interval} minutes. Default: {default_interval} minutes.\n\nSchedules don't change frequently, so a longer interval is recommended.",
+        "data": {
+          "scan_interval": "Update Interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "scan_interval_too_low": "Scan interval must be at least {min_interval} minutes (300 seconds) to respect API rate limits."
+    }
+  }
+}
