@@ -159,10 +159,11 @@ class YoDeckCalendarEntity(
         days_of_week: str = event.get("days_of_week", "1111111")
 
         source = event.get("source", {})
-        source_name: str = source.get("source_name", "Unknown")
+        raw_name: str = source.get("source_name", "Unknown")
+        # Strip internal metadata YoDeck appends in parentheses (e.g. "Flyers(auto-media-123-crop)")
+        source_name = raw_name.split("(")[0].strip() or raw_name
         source_type: str = source.get("source_type", "media")
         summary = source_name
-        description = f"{source_type.capitalize()} \u00b7 {schedule_name}"
 
         def make_event(inst_start: datetime) -> CalendarEvent:
             if duration_mins > 0:
@@ -175,6 +176,11 @@ class YoDeckCalendarEntity(
                     inst_end = inst_start + timedelta(days=1)
             else:
                 inst_end = inst_start + timedelta(hours=1)
+            end_str = _localize(inst_end).strftime("%I:%M %p").lstrip("0")
+            description = (
+                f"{source_type.capitalize()} \u00b7 {schedule_name}\n"
+                f"Ends: {end_str}"
+            )
             return CalendarEvent(
                 summary=summary,
                 start=_localize(inst_start),
