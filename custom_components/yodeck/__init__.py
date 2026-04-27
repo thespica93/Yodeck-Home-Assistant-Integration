@@ -19,7 +19,7 @@ from .coordinator import YoDeckDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
 
 SERVICE_ADD_SCHEDULE_EVENT = "add_schedule_event"
 SERVICE_LIST_SCHEDULES = "list_schedules"
