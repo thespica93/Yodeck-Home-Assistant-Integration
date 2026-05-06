@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from typing import Any
 
@@ -12,6 +12,7 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.util import dt as dt_util
 import voluptuous as vol
 
 from .const import CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL, DOMAIN
@@ -209,13 +210,43 @@ async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> 
     schedule_input = call.data["schedule"]
     content_type = call.data["content_type"]
     content_input = call.data["content"]
-    start_dt: datetime = call.data["start_datetime"]
-    end_dt: datetime = call.data["end_datetime"]
     recurrence_type = call.data["recurrence_type"]
     priority = call.data.get("priority", 5)
     fitting = call.data.get("fitting", "fit")
     screen_input = call.data["screen"]
     delay = call.data.get("delay", 0)
+    duration_preset = call.data.get("duration_preset")
+
+    # Resolve start/end datetimes from preset or explicit fields
+    _PRESET_MINUTES = {
+        "1h": 60, "2h": 120, "4h": 240, "8h": 480,
+        "12h": 720, "24h": 1440, "3d": 4320, "1w": 10080,
+    }
+
+    if duration_preset == "today":
+        # Full day in local time: today 00:00 → tomorrow 00:00
+        today = dt_util.now().date()
+        start_dt = datetime.combine(today, datetime.min.time())
+        end_dt = datetime.combine(today + timedelta(days=1), datetime.min.time())
+    elif duration_preset in _PRESET_MINUTES:
+        raw_start = call.data.get("start_datetime")
+        if raw_start is None:
+            start_dt = dt_util.now().replace(tzinfo=None)
+        elif getattr(raw_start, "tzinfo", None) is not None:
+            start_dt = dt_util.as_local(raw_start).replace(tzinfo=None)
+        else:
+            start_dt = raw_start
+        end_dt = start_dt + timedelta(minutes=_PRESET_MINUTES[duration_preset])
+    else:
+        # Manual mode — both fields required
+        raw_start = call.data.get("start_datetime")
+        raw_end = call.data.get("end_datetime")
+        if raw_start is None or raw_end is None:
+            raise HomeAssistantError(
+                "start_datetime and end_datetime are required when duration_preset is not set"
+            )
+        start_dt = dt_util.as_local(raw_start).replace(tzinfo=None) if getattr(raw_start, "tzinfo", None) else raw_start
+        end_dt = dt_util.as_local(raw_end).replace(tzinfo=None) if getattr(raw_end, "tzinfo", None) else raw_end
 
     # Get the coordinator from the first available entry
     coordinators = hass.data[DOMAIN]

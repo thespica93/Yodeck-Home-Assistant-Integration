@@ -49,16 +49,41 @@ add_schedule_event:
       example: New Years Day Video
       selector:
         text:
+    duration_preset:
+      name: Duration Preset
+      description: "Quick duration options — automatically sets the end time. If set, End Date & Time is ignored. Leave blank to set start and end manually."
+      required: false
+      selector:
+        select:
+          options:
+            - label: "Today (midnight to midnight)"
+              value: today
+            - label: "1 Hour from start"
+              value: 1h
+            - label: "2 Hours from start"
+              value: 2h
+            - label: "4 Hours from start"
+              value: 4h
+            - label: "8 Hours from start"
+              value: 8h
+            - label: "12 Hours from start"
+              value: 12h
+            - label: "24 Hours from start"
+              value: 24h
+            - label: "3 Days from start"
+              value: 3d
+            - label: "1 Week from start"
+              value: 1w
     start_datetime:
       name: Start Date & Time
-      description: "When the event should start (example: today at midnight)"
-      required: true
+      description: "When the event should start. Ignored when 'Today' preset is selected. Defaults to now if left blank."
+      required: false
       selector:
         datetime:
     end_datetime:
       name: End Date & Time
-      description: "When the event should end (example: tomorrow at midnight for 24-hour event)"
-      required: true
+      description: "When the event should end. Required only when no Duration Preset is selected."
+      required: false
       selector:
         datetime:
     recurrence_type:
