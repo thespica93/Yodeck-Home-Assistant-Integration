@@ -4,5 +4,5 @@
   "domains": ["sensor", "binary_sensor", "calendar"],
   "iot_class": "Cloud Polling",
   "homeassistant": "2023.8.0",
-  "icon": "logo.png"
+  "icon": "icon.png"
 }
