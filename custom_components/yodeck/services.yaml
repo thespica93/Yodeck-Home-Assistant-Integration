@@ -54,28 +54,38 @@ schedule_from_calendar_event:
           unit_of_measurement: days
     schedule:
       name: Schedule
-      description: "Select your YoDeck schedule from the dropdown (populated from select.yodeck_schedule)"
+      description: "Name or ID of the YoDeck schedule. Use yodeck.list_schedules to see all options."
       required: true
+      example: Main Schedule
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_schedule
+        text:
     content:
       name: Content
-      description: "Select from the YoDeck Content dropdown — lists all media, playlists, and layouts. When calling from YAML with a plain name/ID, also pass content_type."
+      description: "Name of the content with type prefix: 'media: My Video', 'playlist: Holiday Mix', or 'layout: My Layout'. Use list_media / list_playlists / list_layouts to see names."
       required: true
+      example: "media: Christmas Video"
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_content
+        text:
+    content_type:
+      name: Content Type (optional)
+      description: "Only needed when passing a plain name/ID without the type prefix above."
+      required: false
+      selector:
+        select:
+          options:
+            - label: Media
+              value: media
+            - label: Playlist
+              value: playlist
+            - label: Layout
+              value: layout
     screen:
       name: Screen
-      description: "Select which screen to push to (populated from select.yodeck_screen)"
+      description: "Name or ID of the YoDeck screen to push to. Use yodeck.list_monitors to see all options."
       required: true
+      example: Main Screen
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_screen
+        text:
     priority:
       name: Priority
       description: Event priority (higher numbers have higher priority)
@@ -119,24 +129,35 @@ list_monitors:
 
 add_schedule_event:
   name: Add Schedule Event
-  description: Add a new event to a YoDeck schedule. You can enter either the ID number or the friendly name for schedule and content fields.
+  description: Add a new event to a YoDeck schedule. Enter the name or ID for schedule, content, and screen — use the list_* services to see all available names.
   fields:
     schedule:
       name: Schedule
-      description: "Select your YoDeck schedule from the dropdown (populated from select.yodeck_schedule)"
+      description: "Name or ID of the YoDeck schedule. Use yodeck.list_schedules to see all options."
       required: true
+      example: Main Schedule
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_schedule
+        text:
     content:
       name: Content
-      description: "Select from the YoDeck Content dropdown — lists all media, playlists, and layouts. When calling from YAML with a plain name/ID, also pass content_type."
+      description: "Name of the content with type prefix: 'media: My Video', 'playlist: Holiday Mix', or 'layout: My Layout'. Use list_media / list_playlists / list_layouts to see names."
       required: true
+      example: "media: Christmas Video"
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_content
+        text:
+    content_type:
+      name: Content Type (optional)
+      description: "Only needed when passing a plain name/ID without the type prefix above."
+      required: false
+      selector:
+        select:
+          options:
+            - label: Media
+              value: media
+            - label: Playlist
+              value: playlist
+            - label: Layout
+              value: layout
     duration_preset:
       name: Duration Preset
       description: "Quick duration options — automatically sets the end time. If set, End Date & Time is ignored. Leave blank to set start and end manually."
@@ -220,15 +241,14 @@ add_schedule_event:
           mode: slider
     screen:
       name: Screen
-      description: "Select which screen to push to (populated from select.yodeck_screen)"
+      description: "Name or ID of the YoDeck screen to push to. Use yodeck.list_monitors to see all options."
       required: true
+      example: Main Screen
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_screen
+        text:
     delay:
       name: Delay Before Push
-      description: "Optional delay in seconds (0-10) to wait after updating the schedule before pushing to the screen. Use 0 for no delay (default), or try 2-3 seconds if the screen doesn't update immediately."
+      description: "Optional delay in seconds (0-10) to wait after updating the schedule before pushing to the screen."
       required: false
       default: 0
       selector:
