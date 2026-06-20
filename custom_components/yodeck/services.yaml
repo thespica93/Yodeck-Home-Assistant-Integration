@@ -54,12 +54,11 @@ schedule_from_calendar_event:
           unit_of_measurement: days
     schedule:
       name: Schedule
-      description: "Pick your YoDeck schedule from the dropdown (select.yodeck_schedule entity — set it to the schedule you want first)"
+      description: "Name or ID of your YoDeck schedule (e.g. My Schedule). Run yodeck.list_schedules to see all names."
       required: true
+      example: My Schedule
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_schedule
+        text:
     content_type:
       name: Content Type
       description: "Type of content to schedule"
@@ -82,12 +81,11 @@ schedule_from_calendar_event:
         text:
     screen:
       name: Screen
-      description: "Pick your YoDeck screen from the dropdown (select.yodeck_screen entity — set it to the screen you want first)"
+      description: "Name or ID of your YoDeck screen (e.g. Main Screen). Run yodeck.list_monitors to see all names."
       required: true
+      example: Main Screen
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_screen
+        text:
     priority:
       name: Priority
       description: Event priority (higher numbers have higher priority)
@@ -135,12 +133,11 @@ add_schedule_event:
   fields:
     schedule:
       name: Schedule
-      description: "Pick your YoDeck schedule from the dropdown (select.yodeck_schedule entity — set it to the schedule you want first)"
+      description: "Name or ID of your YoDeck schedule (e.g. My Schedule). Run yodeck.list_schedules to see all names."
       required: true
+      example: My Schedule
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_schedule
+        text:
     content_type:
       name: Content Type
       description: "Type of content to schedule"
@@ -244,12 +241,11 @@ add_schedule_event:
           mode: slider
     screen:
       name: Screen
-      description: "Pick your YoDeck screen from the dropdown (select.yodeck_screen entity — set it to the screen you want first)"
+      description: "Name or ID of your YoDeck screen (e.g. Main Screen). Run yodeck.list_monitors to see all names."
       required: true
+      example: Main Screen
       selector:
-        entity:
-          include_entities:
-            - select.yodeck_screen
+        text:
     delay:
       name: Delay Before Push
       description: "Optional delay in seconds (0-10) to wait after updating the schedule before pushing to the screen."
