@@ -5,6 +5,7 @@
 > - Add every new task here before starting it.
 > - Mark tasks `[x]` as soon as they are completed.
 > - Keep this document the single source of truth for what has been done and what is next.
+> - **Every push must be a new GitHub release.** Bump `manifest.json` version, commit, push, then run `& "C:\Program Files\GitHub CLI\gh.exe" release create vX.Y.Z --title "..." --notes "..."` to create the matching release tag.
 
 ## Completed
 
