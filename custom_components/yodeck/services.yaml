@@ -109,23 +109,23 @@ schedule_from_calendar_event:
 
 list_schedules:
   name: List Schedules
-  description: List all available YoDeck schedules with their IDs (check logs or use as a script to see results)
+  description: Show all YoDeck schedules as a persistent notification — use the names here in the Schedule field.
 
 list_media:
   name: List Media
-  description: List all available YoDeck media with their IDs (check logs or use as a script to see results)
+  description: Show all YoDeck media as a persistent notification — use the names here in the Content Name field.
 
 list_playlists:
   name: List Playlists
-  description: List all available YoDeck playlists with their IDs (check logs or use as a script to see results)
+  description: Show all YoDeck playlists as a persistent notification — use the names here in the Content Name field.
 
 list_layouts:
   name: List Layouts
-  description: List all available YoDeck layouts with their IDs (check logs or use as a script to see results)
+  description: Show all YoDeck layouts as a persistent notification — use the names here in the Content Name field.
 
 list_monitors:
-  name: List Monitors
-  description: List all available YoDeck screens/monitors with their IDs and assigned schedules (check logs or use as a script to see results)
+  name: List Monitors/Screens
+  description: Show all YoDeck screens as a persistent notification — use the names here in the Screen field.
 
 add_schedule_event:
   name: Add Schedule Event

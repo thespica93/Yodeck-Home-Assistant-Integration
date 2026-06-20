@@ -189,110 +189,76 @@ def _merge_or_append_event(
     return updated + [new_event], False
 
 
+async def _notify(hass: HomeAssistant, title: str, message: str, notification_id: str) -> None:
+    await hass.services.async_call(
+        "persistent_notification",
+        "create",
+        {"title": title, "message": message, "notification_id": notification_id},
+    )
+
+
 async def _handle_list_schedules(call: ServiceCall, hass: HomeAssistant) -> None:
-    """Handle the list_schedules service call."""
     coordinators = hass.data[DOMAIN]
     if not coordinators:
         raise HomeAssistantError("YoDeck integration not set up")
-
     coordinator = next(iter(coordinators.values()))
-
     try:
-        schedules_response = await coordinator.api.get_schedules()
-        schedules = schedules_response.get("results", [])
-
-        _LOGGER.info("=== Available YoDeck Schedules ===")
-        for schedule in schedules:
-            _LOGGER.info("ID: %s | Name: %s", schedule.get("id"), schedule.get("name"))
-
+        results = (await coordinator.api.get_schedules()).get("results", [])
+        lines = [f"- **{s['name']}** (ID: {s['id']})" for s in results]
+        await _notify(hass, "YoDeck Schedules", "\n".join(lines) or "None found.", "yodeck_list_schedules")
     except Exception as err:
-        _LOGGER.error("Error listing schedules: %s", err)
         raise HomeAssistantError(f"Failed to list schedules: {err}") from err
 
 
 async def _handle_list_media(call: ServiceCall, hass: HomeAssistant) -> None:
-    """Handle the list_media service call."""
     coordinators = hass.data[DOMAIN]
     if not coordinators:
         raise HomeAssistantError("YoDeck integration not set up")
-
     coordinator = next(iter(coordinators.values()))
-
     try:
-        media_response = await coordinator.api.get_media()
-        media_list = media_response.get("results", [])
-
-        _LOGGER.info("=== Available YoDeck Media ===")
-        for media in media_list:
-            _LOGGER.info("ID: %s | Name: %s | Type: %s",
-                        media.get("id"), media.get("name"), media.get("type"))
-
+        results = (await coordinator.api.get_media()).get("results", [])
+        lines = [f"- **{m['name']}** (ID: {m['id']})" for m in results]
+        await _notify(hass, "YoDeck Media", "\n".join(lines) or "None found.", "yodeck_list_media")
     except Exception as err:
-        _LOGGER.error("Error listing media: %s", err)
         raise HomeAssistantError(f"Failed to list media: {err}") from err
 
 
 async def _handle_list_playlists(call: ServiceCall, hass: HomeAssistant) -> None:
-    """Handle the list_playlists service call."""
     coordinators = hass.data[DOMAIN]
     if not coordinators:
         raise HomeAssistantError("YoDeck integration not set up")
-
     coordinator = next(iter(coordinators.values()))
-
     try:
-        playlists_response = await coordinator.api.get_playlists()
-        playlists = playlists_response.get("results", [])
-
-        _LOGGER.info("=== Available YoDeck Playlists ===")
-        for playlist in playlists:
-            _LOGGER.info("ID: %s | Name: %s", playlist.get("id"), playlist.get("name"))
-
+        results = (await coordinator.api.get_playlists()).get("results", [])
+        lines = [f"- **{p['name']}** (ID: {p['id']})" for p in results]
+        await _notify(hass, "YoDeck Playlists", "\n".join(lines) or "None found.", "yodeck_list_playlists")
     except Exception as err:
-        _LOGGER.error("Error listing playlists: %s", err)
         raise HomeAssistantError(f"Failed to list playlists: {err}") from err
 
 
 async def _handle_list_layouts(call: ServiceCall, hass: HomeAssistant) -> None:
-    """Handle the list_layouts service call."""
     coordinators = hass.data[DOMAIN]
     if not coordinators:
         raise HomeAssistantError("YoDeck integration not set up")
-
     coordinator = next(iter(coordinators.values()))
-
     try:
-        layouts_response = await coordinator.api.get_layouts()
-        layouts = layouts_response.get("results", [])
-
-        _LOGGER.info("=== Available YoDeck Layouts ===")
-        for layout in layouts:
-            _LOGGER.info("ID: %s | Name: %s", layout.get("id"), layout.get("name"))
-
+        results = (await coordinator.api.get_layouts()).get("results", [])
+        lines = [f"- **{l['name']}** (ID: {l['id']})" for l in results]
+        await _notify(hass, "YoDeck Layouts", "\n".join(lines) or "None found.", "yodeck_list_layouts")
     except Exception as err:
-        _LOGGER.error("Error listing layouts: %s", err)
         raise HomeAssistantError(f"Failed to list layouts: {err}") from err
 
 
 async def _handle_list_monitors(call: ServiceCall, hass: HomeAssistant) -> None:
-    """Handle the list_monitors service call."""
     coordinators = hass.data[DOMAIN]
     if not coordinators:
         raise HomeAssistantError("YoDeck integration not set up")
-
     coordinator = next(iter(coordinators.values()))
-
     try:
-        monitors_response = await coordinator.api.get_monitors()
-        monitors = monitors_response.get("results", [])
-
-        _LOGGER.info("=== Available YoDeck Monitors/Screens ===")
-        for monitor in monitors:
-            _LOGGER.info("ID: %s | Name: %s | Schedule: %s",
-                        monitor.get("id"), monitor.get("name"), monitor.get("schedule"))
-
+        results = (await coordinator.api.get_monitors()).get("results", [])
+        lines = [f"- **{m['name']}** (ID: {m['id']})" for m in results]
+        await _notify(hass, "YoDeck Screens", "\n".join(lines) or "None found.", "yodeck_list_monitors")
     except Exception as err:
-        _LOGGER.error("Error listing monitors: %s", err)
         raise HomeAssistantError(f"Failed to list monitors: {err}") from err
 
 
