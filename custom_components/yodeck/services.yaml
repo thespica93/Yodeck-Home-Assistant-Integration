@@ -129,29 +129,14 @@ add_schedule_event:
         entity:
           include_entities:
             - select.yodeck_schedule
-    content_type:
-      name: Content Type
-      description: Type of content to schedule
-      required: true
-      selector:
-        select:
-          options:
-            - label: Media
-              value: media
-            - label: Playlist
-              value: playlist
-            - label: Layout
-              value: layout
     content:
       name: Content
-      description: "Select your content — pick select.yodeck_media, select.yodeck_playlist, or select.yodeck_layout to match your Content Type"
+      description: "Select from the YoDeck Content dropdown — lists all media, playlists, and layouts. When calling from YAML with a plain name/ID, also pass content_type."
       required: true
       selector:
         entity:
           include_entities:
-            - select.yodeck_media
-            - select.yodeck_playlist
-            - select.yodeck_layout
+            - select.yodeck_content
     duration_preset:
       name: Duration Preset
       description: "Quick duration options — automatically sets the end time. If set, End Date & Time is ignored. Leave blank to set start and end manually."
