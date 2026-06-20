@@ -1,4 +1,4 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -20,25 +20,64 @@ wheels/
 .installed.cfg
 *.egg
 
-# IDEs
+# ── IDEs ──────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Testing
+# ── Testing / Coverage ────────────────────────────────────────────────────────
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 .tox/
+*.log
 
-# Environment
+# ── Virtual Environments ──────────────────────────────────────────────────────
 .env
+.env.*
 .venv
 env/
 venv/
+ENV/
+
+# ── Secrets & Credentials ─────────────────────────────────────────────────────
+# NEVER commit files that may contain API tokens, passwords, or keys
+secrets.yaml
+secrets.json
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+*_credentials*
+*_token*
+.token
+.apikey
+
+# ── Home Assistant local config ───────────────────────────────────────────────
+# These live in your HA config directory and should NEVER be committed here
+configuration.yaml
+automations.yaml
+scripts.yaml
+scenes.yaml
+groups.yaml
+home-assistant.log
+home-assistant.log.*
+home-assistant_v2.db
+home-assistant_v2.db-shm
+home-assistant_v2.db-wal
+.storage/
+.HA_VERSION
+
+# ── Local development / scratch files ─────────────────────────────────────────
+local/
+scratch/
+dev_config/

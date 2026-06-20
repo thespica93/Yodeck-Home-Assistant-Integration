@@ -23,11 +23,26 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
 
 SERVICE_ADD_SCHEDULE_EVENT = "add_schedule_event"
+SERVICE_SCHEDULE_FROM_CALENDAR = "schedule_from_calendar_event"
 SERVICE_LIST_SCHEDULES = "list_schedules"
 SERVICE_LIST_MEDIA = "list_media"
 SERVICE_LIST_PLAYLISTS = "list_playlists"
 SERVICE_LIST_LAYOUTS = "list_layouts"
 SERVICE_LIST_MONITORS = "list_monitors"
+
+SERVICE_SCHEDULE_FROM_CALENDAR_SCHEMA = vol.Schema({
+    vol.Required("calendar_entity"): cv.entity_id,
+    vol.Required("event_name"): cv.string,
+    vol.Optional("days_before", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+    vol.Optional("days_after", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
+    vol.Optional("look_ahead_days", default=365): vol.All(vol.Coerce(int), vol.Range(min=1, max=730)),
+    vol.Required("schedule"): cv.string,
+    vol.Required("content_type"): vol.In(["media", "playlist", "layout"]),
+    vol.Required("content"): cv.string,
+    vol.Required("screen"): cv.string,
+    vol.Optional("priority", default=5): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
+    vol.Optional("delay", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
+})
 
 SERVICE_ADD_SCHEDULE_EVENT_SCHEMA = vol.Schema({
     vol.Required("schedule"): cv.string,  # Accept ID or name
@@ -37,7 +52,7 @@ SERVICE_ADD_SCHEDULE_EVENT_SCHEMA = vol.Schema({
     vol.Required("end_datetime"): cv.datetime,
     vol.Required("recurrence_type"): vol.In(["once", "daily", "weekday", "weekly", "monthly", "annually"]),
     vol.Optional("priority", default=5): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
-    vol.Optional("fitting", default="fit"): vol.In(["fit", "crop", "stretch"]),
+    # vol.Optional("fitting", default="fit"): vol.In(["fit", "crop", "stretch"]),  # Not working yet
     vol.Required("screen"): cv.string,  # Accept ID or name
     vol.Optional("delay", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
 })
@@ -96,6 +111,43 @@ def _get_recurrence_pattern(recurrence_type: str, start_dt: datetime) -> tuple[s
     elif recurrence_type == "annually":
         return ("y", "1111111")  # Yearly
     return ("o", "1111111")  # Default to once
+
+
+def _merge_or_append_event(
+    existing_events: list[dict[str, Any]],
+    new_event: dict[str, Any],
+    content_id: int,
+    start: datetime,
+    end: datetime,
+) -> tuple[list[dict[str, Any]], bool]:
+    """Merge new date range into an existing event for the same content if they overlap.
+
+    Returns (updated_events_list, was_merged). When was_merged is True the existing
+    event was extended in-place to cover the union of both date ranges. When False
+    the new event was appended as a brand-new entry.
+    """
+    updated = list(existing_events)
+    for i, event in enumerate(updated):
+        if event.get("source", {}).get("source_id") != content_id:
+            continue
+        try:
+            ev_start = datetime.fromisoformat(event["start"])
+            ev_end = datetime.fromisoformat(event["end"])
+        except (KeyError, ValueError):
+            continue
+        # <= so that touching/adjacent events are also merged
+        if start <= ev_end and ev_start <= end:
+            merged_start = min(ev_start, start)
+            merged_end = max(ev_end, end)
+            merged_duration = int((merged_end - merged_start).total_seconds() / 60)
+            updated[i] = {
+                **event,
+                "start": merged_start.isoformat(),
+                "end": merged_end.isoformat(),
+                "duration": merged_duration,
+            }
+            return updated, True
+    return updated + [new_event], False
 
 
 async def _handle_list_schedules(call: ServiceCall, hass: HomeAssistant) -> None:
@@ -205,6 +257,178 @@ async def _handle_list_monitors(call: ServiceCall, hass: HomeAssistant) -> None:
         raise HomeAssistantError(f"Failed to list monitors: {err}") from err
 
 
+async def _handle_schedule_from_calendar_event(call: ServiceCall, hass: HomeAssistant) -> None:
+    """Handle the schedule_from_calendar_event service call."""
+    calendar_entity_id = call.data["calendar_entity"]
+    event_name = call.data["event_name"]
+    days_before = call.data.get("days_before", 0)
+    days_after = call.data.get("days_after", 0)
+    look_ahead_days = call.data.get("look_ahead_days", 365)
+    schedule_input = call.data["schedule"]
+    content_type = call.data["content_type"]
+    content_input = call.data["content"]
+    screen_input = call.data["screen"]
+    priority = call.data.get("priority", 5)
+    delay = call.data.get("delay", 0)
+
+    now = dt_util.now()
+    search_end = now + timedelta(days=look_ahead_days)
+
+    # Fetch events from the HA calendar via the built-in calendar.get_events service
+    try:
+        response = await hass.services.async_call(
+            "calendar",
+            "get_events",
+            {
+                "entity_id": calendar_entity_id,
+                "start_date_time": now.isoformat(),
+                "end_date_time": search_end.isoformat(),
+            },
+            blocking=True,
+            return_response=True,
+        )
+    except Exception as err:
+        raise HomeAssistantError(
+            f"Failed to fetch events from calendar '{calendar_entity_id}': {err}"
+        ) from err
+
+    events = response.get(calendar_entity_id, {}).get("events", [])
+
+    if not events:
+        raise HomeAssistantError(
+            f"No events found in '{calendar_entity_id}' within the next {look_ahead_days} days"
+        )
+
+    # Find first event whose summary contains the search term (case-insensitive)
+    event_name_lower = event_name.lower()
+    matched_event = None
+    for event in events:
+        if event_name_lower in event.get("summary", "").lower():
+            matched_event = event
+            break
+
+    if matched_event is None:
+        available = [e.get("summary", "") for e in events[:10]]
+        raise HomeAssistantError(
+            f"No event matching '{event_name}' found in '{calendar_entity_id}' "
+            f"within the next {look_ahead_days} days. "
+            f"Available events (first 10): {available}"
+        )
+
+    _LOGGER.info(
+        "Found calendar event '%s' starting %s",
+        matched_event.get("summary"), matched_event.get("start"),
+    )
+
+    # Parse start/end — HA returns {"date": "YYYY-MM-DD"} or {"dateTime": "ISO string"}
+    def _parse_calendar_dt(field: dict) -> datetime:
+        if "dateTime" in field:
+            parsed = datetime.fromisoformat(field["dateTime"])
+            return dt_util.as_local(parsed).replace(tzinfo=None) if parsed.tzinfo else parsed
+        d = datetime.strptime(field["date"], "%Y-%m-%d").date()
+        return datetime.combine(d, datetime.min.time())
+
+    event_start = _parse_calendar_dt(matched_event["start"])
+    event_end = _parse_calendar_dt(matched_event["end"])
+
+    schedule_start = event_start - timedelta(days=days_before)
+    schedule_end = event_end + timedelta(days=days_after)
+
+    _LOGGER.info(
+        "Scheduling content window: %s → %s (%d days before, %d days after '%s')",
+        schedule_start, schedule_end, days_before, days_after, matched_event.get("summary"),
+    )
+
+    coordinators = hass.data[DOMAIN]
+    if not coordinators:
+        raise HomeAssistantError("YoDeck integration not set up")
+    coordinator = next(iter(coordinators.values()))
+
+    duration = int((schedule_end - schedule_start).total_seconds() / 60)
+
+    try:
+        schedules_response = await coordinator.api.get_schedules()
+        schedules = schedules_response.get("results", [])
+        schedule_id = _resolve_id_or_name(schedule_input, schedules, "schedule")
+
+        current_schedule = next((s for s in schedules if s.get("id") == schedule_id), None)
+        if not current_schedule:
+            raise HomeAssistantError(f"Schedule with ID {schedule_id} not found")
+
+        if content_type == "media":
+            content_response = await coordinator.api.get_media()
+        elif content_type == "playlist":
+            content_response = await coordinator.api.get_playlists()
+        elif content_type == "layout":
+            content_response = await coordinator.api.get_layouts()
+        else:
+            raise HomeAssistantError(f"Invalid content type: {content_type}")
+
+        content_list = content_response.get("results", [])
+        content_id = _resolve_id_or_name(content_input, content_list, content_type)
+
+        new_event = {
+            "source": {
+                "source_id": content_id,
+                "source_type": content_type,
+            },
+            "start": schedule_start.isoformat(),
+            "end": schedule_end.isoformat(),
+            "duration": duration,
+            "priority": priority,
+            "recurrence": "o",
+            "days_of_week": "1111111",
+        }
+
+        existing_events = current_schedule.get("events", [])
+        merged_events, was_merged = _merge_or_append_event(
+            existing_events, new_event, content_id, schedule_start, schedule_end
+        )
+
+        if was_merged:
+            _LOGGER.info(
+                "Extended existing event for content %s in schedule %s to %s → %s",
+                content_id, schedule_id, schedule_start, schedule_end,
+            )
+
+        update_data = {
+            "name": current_schedule["name"],
+            "events": merged_events,
+        }
+        if "workspace" in current_schedule:
+            update_data["workspace"] = current_schedule["workspace"]
+        if "filler_content" in current_schedule:
+            update_data["filler_content"] = current_schedule["filler_content"]
+
+        _LOGGER.debug("Sending calendar-based event to YoDeck: %s", new_event)
+        await coordinator.api.update_schedule(schedule_id, update_data)
+
+        if delay > 0:
+            await asyncio.sleep(delay)
+
+        all_screens = coordinator.data.get("screens", [])
+        screen_id = _resolve_id_or_name(screen_input, all_screens, "screen")
+        screen_name = next(
+            (s.get("name", "Unknown") for s in all_screens if s.get("id") == screen_id),
+            "Unknown",
+        )
+
+        await coordinator.api.push_to_screen(screen_id)
+        await coordinator.api.refresh_screenshot(screen_id)
+        await coordinator.async_request_refresh()
+
+        _LOGGER.info(
+            "Scheduled content around '%s' on screen %s (%s): %s → %s",
+            matched_event.get("summary"), screen_id, screen_name, schedule_start, schedule_end,
+        )
+
+    except HomeAssistantError:
+        raise
+    except Exception as err:
+        _LOGGER.error("Error scheduling from calendar event: %s", err)
+        raise HomeAssistantError(f"Failed to schedule from calendar event: {err}") from err
+
+
 async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> None:
     """Handle the add_schedule_event service call."""
     schedule_input = call.data["schedule"]
@@ -212,7 +436,7 @@ async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> 
     content_input = call.data["content"]
     recurrence_type = call.data["recurrence_type"]
     priority = call.data.get("priority", 5)
-    fitting = call.data.get("fitting", "fit")
+    # fitting = call.data.get("fitting", "fit")  # Not working yet
     screen_input = call.data["screen"]
     delay = call.data.get("delay", 0)
     duration_preset = call.data.get("duration_preset")
@@ -294,20 +518,19 @@ async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> 
         # Resolve content ID from input (ID or name)
         content_id = _resolve_id_or_name(content_input, content_list, content_type)
 
-        # Map fitting values to what YoDeck expects
-        # YoDeck might use different values than our UI labels
-        fitting_map = {
-            "fit": "fit",
-            "crop": "crop",
-            "stretch": "stretch"
-        }
+        # # Map fitting values to what YoDeck expects  # Not working yet
+        # fitting_map = {
+        #     "fit": "fit",
+        #     "crop": "crop",
+        #     "stretch": "stretch"
+        # }
 
         # Create the new event
         new_event = {
             "source": {
                 "source_id": content_id,
                 "source_type": content_type,
-                "fitting": fitting_map.get(fitting, "fit"),
+                # "fitting": fitting_map.get(fitting, "fit"),  # Not working yet
             },
             "start": start_dt.isoformat(),
             "end": end_dt.isoformat(),
@@ -317,11 +540,19 @@ async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> 
             "days_of_week": days_of_week,
         }
 
-        _LOGGER.debug("Created event with fitting=%s for content %s", fitting, content_id)
+        # _LOGGER.debug("Created event with fitting=%s for content %s", fitting, content_id)  # Not working yet
 
-        # Add the new event to existing events
+        # Add the new event — extend an existing one if the same content overlaps this window
         existing_events = current_schedule.get("events", [])
-        updated_events = existing_events + [new_event]
+        updated_events, was_merged = _merge_or_append_event(
+            existing_events, new_event, content_id, start_dt, end_dt
+        )
+
+        if was_merged:
+            _LOGGER.info(
+                "Extended existing event for content %s in schedule %s to %s → %s",
+                content_id, schedule_id, start_dt, end_dt,
+            )
 
         # Prepare the update payload - preserve all existing fields
         update_data = {
@@ -428,6 +659,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         """Handle add schedule event service call."""
         await _handle_add_schedule_event(call, hass)
 
+    async def handle_schedule_from_calendar_event(call: ServiceCall) -> None:
+        """Handle schedule from calendar event service call."""
+        await _handle_schedule_from_calendar_event(call, hass)
+
     hass.services.async_register(
         DOMAIN,
         SERVICE_LIST_SCHEDULES,
@@ -465,6 +700,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         schema=SERVICE_ADD_SCHEDULE_EVENT_SCHEMA,
     )
 
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_SCHEDULE_FROM_CALENDAR,
+        handle_schedule_from_calendar_event,
+        schema=SERVICE_SCHEDULE_FROM_CALENDAR_SCHEMA,
+    )
+
     return True
 
 
@@ -486,5 +728,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass.services.async_remove(DOMAIN, SERVICE_LIST_LAYOUTS)
             hass.services.async_remove(DOMAIN, SERVICE_LIST_MONITORS)
             hass.services.async_remove(DOMAIN, SERVICE_ADD_SCHEDULE_EVENT)
+            hass.services.async_remove(DOMAIN, SERVICE_SCHEDULE_FROM_CALENDAR)
 
     return unload_ok

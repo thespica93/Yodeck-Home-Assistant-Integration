@@ -1,3 +1,112 @@
+schedule_from_calendar_event:
+  name: Schedule From Calendar Event
+  description: >
+    Finds a named event in a Home Assistant calendar (e.g. "Father's Day" from Google Calendar)
+    and schedules YoDeck content to play for a window around that event date.
+    If the same content is already scheduled for that period it is silently skipped.
+  fields:
+    calendar_entity:
+      name: Calendar
+      description: "The HA calendar entity to search (e.g. calendar.google_holidays_in_united_states)"
+      required: true
+      selector:
+        entity:
+          domain: calendar
+    event_name:
+      name: Event Name
+      description: "Partial, case-insensitive name to search for (e.g. 'father' matches \"Father's Day\")"
+      required: true
+      example: Father's Day
+      selector:
+        text:
+    days_before:
+      name: Days Before Event
+      description: How many days before the event start to begin showing content
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+          unit_of_measurement: days
+    days_after:
+      name: Days After Event
+      description: How many days after the event ends to keep showing content
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 60
+          mode: box
+          unit_of_measurement: days
+    look_ahead_days:
+      name: Search Window (days)
+      description: How far ahead to search for the event (default 365 days)
+      required: false
+      default: 365
+      selector:
+        number:
+          min: 1
+          max: 730
+          mode: box
+          unit_of_measurement: days
+    schedule:
+      name: Schedule
+      description: "YoDeck schedule ID or name to add the event to"
+      required: true
+      example: Main Schedule
+      selector:
+        text:
+    content_type:
+      name: Content Type
+      description: Type of YoDeck content to schedule
+      required: true
+      selector:
+        select:
+          options:
+            - label: Media
+              value: media
+            - label: Playlist
+              value: playlist
+            - label: Layout
+              value: layout
+    content:
+      name: Content
+      description: "YoDeck content ID or name to display"
+      required: true
+      example: Christmas Promo Video
+      selector:
+        text:
+    screen:
+      name: Screen
+      description: "Screen ID or name to push the update to"
+      required: true
+      example: Outdoor Screen
+      selector:
+        text:
+    priority:
+      name: Priority
+      description: Event priority (higher numbers have higher priority)
+      required: false
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 10
+          mode: slider
+    delay:
+      name: Delay Before Push
+      description: Seconds to wait after updating the schedule before pushing to the screen
+      required: false
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10
+          mode: slider
+
 list_schedules:
   name: List Schedules
   description: List all available YoDeck schedules with their IDs (check logs or use as a script to see results)
@@ -106,20 +215,20 @@ add_schedule_event:
               value: monthly
             - label: Annually (same date each year)
               value: annually
-    fitting:
-      name: Fitting Option
-      description: How the content should fit on the screen
-      required: false
-      default: fit
-      selector:
-        select:
-          options:
-            - label: Fit
-              value: fit
-            - label: Crop
-              value: crop
-            - label: Stretch
-              value: stretch
+    # fitting:  # Not working yet — disabled for later
+    #   name: Fitting Option
+    #   description: How the content should fit on the screen
+    #   required: false
+    #   default: fit
+    #   selector:
+    #     select:
+    #       options:
+    #         - label: Fit
+    #           value: fit
+    #         - label: Crop
+    #           value: crop
+    #         - label: Stretch
+    #           value: stretch
     priority:
       name: Priority
       description: Event priority (higher numbers have higher priority)
