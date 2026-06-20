@@ -37,7 +37,7 @@ SERVICE_SCHEDULE_FROM_CALENDAR_SCHEMA = vol.Schema({
     vol.Optional("days_after", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=60)),
     vol.Optional("look_ahead_days", default=365): vol.All(vol.Coerce(int), vol.Range(min=1, max=730)),
     vol.Required("schedule"): cv.string,
-    vol.Required("content_type"): vol.In(["media", "playlist", "layout"]),
+    vol.Optional("content_type"): vol.In(["media", "playlist", "layout"]),
     vol.Required("content"): cv.string,
     vol.Required("screen"): cv.string,
     vol.Optional("priority", default=5): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
@@ -46,7 +46,7 @@ SERVICE_SCHEDULE_FROM_CALENDAR_SCHEMA = vol.Schema({
 
 SERVICE_ADD_SCHEDULE_EVENT_SCHEMA = vol.Schema({
     vol.Required("schedule"): cv.string,  # Accept ID or name
-    vol.Required("content_type"): vol.In(["media", "playlist", "layout"]),
+    vol.Optional("content_type"): vol.In(["media", "playlist", "layout"]),
     vol.Required("content"): cv.string,  # Accept ID or name
     vol.Required("start_datetime"): cv.datetime,
     vol.Required("end_datetime"): cv.datetime,
@@ -69,6 +69,31 @@ def _resolve_select_entity(value: str, hass: HomeAssistant) -> str:
         if state and state.state not in ("unknown", "unavailable", ""):
             return state.state
     return value
+
+
+_CONTENT_PREFIXES: dict[str, str] = {
+    "media: ": "media",
+    "playlist: ": "playlist",
+    "layout: ": "layout",
+}
+
+
+def _parse_content(raw: str, fallback_type: str | None) -> tuple[str, str]:
+    """Return (content_type, content_name) from a raw content value.
+
+    If the value has a type prefix from YoDeckContentSelect (e.g. "media: Xmas Video"),
+    the prefix is stripped and the type is extracted. Otherwise falls back to
+    the explicit content_type field (needed for plain-name/ID input from YAML automations).
+    """
+    for prefix, ctype in _CONTENT_PREFIXES.items():
+        if raw.startswith(prefix):
+            return ctype, raw[len(prefix):]
+    if fallback_type:
+        return fallback_type, raw
+    raise HomeAssistantError(
+        "content_type is required when content is entered as a plain name or ID "
+        "(it can be omitted when using the select.yodeck_content entity)"
+    )
 
 
 def _resolve_id_or_name(value: str, items: list[dict[str, Any]], item_type: str) -> int:
@@ -278,8 +303,8 @@ async def _handle_schedule_from_calendar_event(call: ServiceCall, hass: HomeAssi
     days_after = call.data.get("days_after", 0)
     look_ahead_days = call.data.get("look_ahead_days", 365)
     schedule_input = _resolve_select_entity(call.data["schedule"], hass)
-    content_type = call.data["content_type"]
-    content_input = _resolve_select_entity(call.data["content"], hass)
+    content_raw = _resolve_select_entity(call.data["content"], hass)
+    content_type, content_input = _parse_content(content_raw, call.data.get("content_type"))
     screen_input = _resolve_select_entity(call.data["screen"], hass)
     priority = call.data.get("priority", 5)
     delay = call.data.get("delay", 0)
@@ -445,8 +470,8 @@ async def _handle_schedule_from_calendar_event(call: ServiceCall, hass: HomeAssi
 async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> None:
     """Handle the add_schedule_event service call."""
     schedule_input = _resolve_select_entity(call.data["schedule"], hass)
-    content_type = call.data["content_type"]
-    content_input = _resolve_select_entity(call.data["content"], hass)
+    content_raw = _resolve_select_entity(call.data["content"], hass)
+    content_type, content_input = _parse_content(content_raw, call.data.get("content_type"))
     recurrence_type = call.data["recurrence_type"]
     priority = call.data.get("priority", 5)
     # fitting = call.data.get("fitting", "fit")  # Not working yet

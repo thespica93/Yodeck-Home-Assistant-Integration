@@ -60,10 +60,18 @@ schedule_from_calendar_event:
         entity:
           include_entities:
             - select.yodeck_schedule
-    content_type:
-      name: Content Type
-      description: Type of YoDeck content to schedule
+    content:
+      name: Content
+      description: "Select from the YoDeck Content dropdown — shows all media, playlists, and layouts with their type. Content Type below is only needed when entering a plain name or ID directly."
       required: true
+      selector:
+        entity:
+          include_entities:
+            - select.yodeck_content
+    content_type:
+      name: Content Type (manual override)
+      description: "Only required when typing a plain name or ID in the Content field instead of using the dropdown. Leave blank when using select.yodeck_content."
+      required: false
       selector:
         select:
           options:
@@ -73,16 +81,6 @@ schedule_from_calendar_event:
               value: playlist
             - label: Layout
               value: layout
-    content:
-      name: Content
-      description: "Select your content — pick select.yodeck_media, select.yodeck_playlist, or select.yodeck_layout to match your Content Type"
-      required: true
-      selector:
-        entity:
-          include_entities:
-            - select.yodeck_media
-            - select.yodeck_playlist
-            - select.yodeck_layout
     screen:
       name: Screen
       description: "Select which screen to push to (populated from select.yodeck_screen)"

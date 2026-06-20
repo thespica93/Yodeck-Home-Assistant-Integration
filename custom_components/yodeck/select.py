@@ -30,6 +30,7 @@ async def async_setup_entry(
         YoDeckMediaSelect(coordinator),
         YoDeckPlaylistSelect(coordinator),
         YoDeckLayoutSelect(coordinator),
+        YoDeckContentSelect(coordinator),
     ])
 
 
@@ -120,3 +121,44 @@ class YoDeckLayoutSelect(YoDeckResourceSelect):
     def __init__(self, coordinator: YoDeckDataUpdateCoordinator) -> None:
         self._attr_unique_id = f"yodeck_layout_select_{coordinator.config_entry.entry_id}"
         super().__init__(coordinator)
+
+
+class YoDeckContentSelect(CoordinatorEntity[YoDeckDataUpdateCoordinator], SelectEntity):
+    """Combined searchable dropdown of all content (media + playlists + layouts).
+
+    Options are prefixed with their type so the service handler can infer
+    content_type automatically: "media: Christmas Video", "playlist: Holiday Mix".
+    """
+
+    _attr_name = "YoDeck Content"
+    _attr_icon = "mdi:play-box-multiple"
+
+    def __init__(self, coordinator: YoDeckDataUpdateCoordinator) -> None:
+        self._attr_unique_id = f"yodeck_content_select_{coordinator.config_entry.entry_id}"
+        super().__init__(coordinator)
+        self._attr_current_option: str | None = None
+        self._refresh_options()
+
+    def _refresh_options(self) -> None:
+        data = self.coordinator.data or {}
+        options: list[str] = []
+        for item in data.get("media", []):
+            if item.get("name"):
+                options.append(f"media: {item['name']}")
+        for item in data.get("playlists", []):
+            if item.get("name"):
+                options.append(f"playlist: {item['name']}")
+        for item in data.get("layouts", []):
+            if item.get("name"):
+                options.append(f"layout: {item['name']}")
+        self._attr_options = options
+        if self._attr_current_option not in self._attr_options:
+            self._attr_current_option = options[0] if options else None
+
+    def _handle_coordinator_update(self) -> None:
+        self._refresh_options()
+        self.async_write_ha_state()
+
+    async def async_select_option(self, option: str) -> None:
+        self._attr_current_option = option
+        self.async_write_ha_state()
