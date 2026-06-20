@@ -45,15 +45,16 @@ SERVICE_SCHEDULE_FROM_CALENDAR_SCHEMA = vol.Schema({
 })
 
 SERVICE_ADD_SCHEDULE_EVENT_SCHEMA = vol.Schema({
-    vol.Required("schedule"): cv.string,  # Accept ID or name
+    vol.Required("schedule"): cv.string,
     vol.Optional("content_type"): vol.In(["media", "playlist", "layout"]),
-    vol.Required("content"): cv.string,  # Accept ID or name
-    vol.Required("start_datetime"): cv.datetime,
-    vol.Required("end_datetime"): cv.datetime,
+    vol.Required("content"): cv.string,
+    vol.Optional("duration_preset"): vol.In(["today", "1h", "2h", "4h", "8h", "12h", "24h", "3d", "1w"]),
+    vol.Optional("start_datetime"): cv.datetime,
+    vol.Optional("end_datetime"): cv.datetime,
     vol.Required("recurrence_type"): vol.In(["once", "daily", "weekday", "weekly", "monthly", "annually"]),
     vol.Optional("priority", default=5): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
     # vol.Optional("fitting", default="fit"): vol.In(["fit", "crop", "stretch"]),  # Not working yet
-    vol.Required("screen"): cv.string,  # Accept ID or name
+    vol.Required("screen"): cv.string,
     vol.Optional("delay", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
 })
 
