@@ -60,17 +60,10 @@ schedule_from_calendar_event:
         entity:
           include_entities:
             - select.yodeck_schedule
-    content:
-      name: Content
-      description: "Type the content name with a type prefix: 'media: My Video', 'playlist: Holiday Mix', or 'layout: My Layout'. Use list_media / list_playlists / list_layouts to see exact names."
-      required: true
-      example: "media: Christmas Video"
-      selector:
-        text:
     content_type:
-      name: Content Type (optional)
-      description: "Only needed when passing a plain name/ID without the type prefix above."
-      required: false
+      name: Content Type
+      description: "Type of content to schedule"
+      required: true
       selector:
         select:
           options:
@@ -80,6 +73,13 @@ schedule_from_calendar_event:
               value: playlist
             - label: Layout
               value: layout
+    content:
+      name: Content Name
+      description: "Name or ID of the content (e.g. Christmas Video). Use list_media / list_playlists / list_layouts to see exact names."
+      required: true
+      example: "Christmas Video"
+      selector:
+        text:
     screen:
       name: Screen
       description: "Pick your YoDeck screen from the dropdown (select.yodeck_screen entity — set it to the screen you want first)"
@@ -141,17 +141,10 @@ add_schedule_event:
         entity:
           include_entities:
             - select.yodeck_schedule
-    content:
-      name: Content
-      description: "Type the content name with a type prefix: 'media: My Video', 'playlist: Holiday Mix', or 'layout: My Layout'. Use list_media / list_playlists / list_layouts to see exact names."
-      required: true
-      example: "media: Christmas Video"
-      selector:
-        text:
     content_type:
-      name: Content Type (optional)
-      description: "Only needed when passing a plain name/ID without the type prefix above."
-      required: false
+      name: Content Type
+      description: "Type of content to schedule"
+      required: true
       selector:
         select:
           options:
@@ -161,6 +154,13 @@ add_schedule_event:
               value: playlist
             - label: Layout
               value: layout
+    content:
+      name: Content Name
+      description: "Name or ID of the content (e.g. Christmas Video). Use list_media / list_playlists / list_layouts to see exact names."
+      required: true
+      example: "Christmas Video"
+      selector:
+        text:
     duration_preset:
       name: Duration Preset
       description: "Quick duration options — automatically sets the end time. If set, End Date & Time is ignored. Leave blank to set start and end manually."
