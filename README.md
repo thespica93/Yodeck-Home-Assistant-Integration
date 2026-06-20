@@ -1,178 +1,201 @@
 # YoDeck Home Assistant Integration
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
+[![GitHub release](https://img.shields.io/github/release/thespica93/Yodeck-Home-Assistant-Integration.svg)](https://github.com/thespica93/Yodeck-Home-Assistant-Integration/releases)
 
-A Home Assistant integration for YoDeck digital signage that monitors your schedules and automates your TV outlet based on scheduled content.
+Control and monitor your [YoDeck](https://yodeck.com) digital signage directly from Home Assistant. Schedule content, react to what's playing, and automate your screens alongside the rest of your smart home.
+
+---
 
 ## Features
 
-- 📅 **Schedule Monitoring**: Track when content is scheduled to play
-- 🔌 **Smart Outlet Control**: Automatically turn on/off your TV based on schedule state
-- 📊 **Rich Attributes**: See what content is scheduled for today with priority and duration
-- 🔄 **Auto-Discovery**: Automatically discovers all schedules on your YoDeck account
+- **Schedule monitoring** — binary sensors go ON/OFF based on whether content is actively playing right now
+- **Calendar integration** — see all YoDeck events in the HA calendar UI, including recurring events
+- **Service actions** — add events to schedules and push them to screens from automations
+- **Holiday scheduling** — pull events from any HA calendar (Google Calendar, holiday calendars) and schedule content around them with configurable day offsets
+- **Smart duplicate handling** — if the same content already covers the requested date range, the existing event is extended rather than duplicated
+- **Searchable dropdowns** — all schedules, screens, and content are exposed as HA select entities for use in the service UI and automations
+- **Auto-refresh** — all data refreshes in parallel on a configurable interval (default 60 min); press the refresh button for an immediate update
+
+---
 
 ## Entities
 
 ### Binary Sensors
-- **YoDeck [Schedule Name]**: Turns ON when there's content scheduled for today, OFF when nothing is scheduled
-  - Attributes include:
-    - `active_events_today`: Count of events scheduled for today
-    - `active_events`: List of scheduled content with names, types, priorities, and durations
-    - `total_events`: Total number of events in the schedule
+One per schedule — `binary_sensor.yodeck_{schedule_name}`
+
+- **State**: `on` when content is actively playing right now, `off` otherwise
+- **Attributes**: `active_events`, `active_events_today`, `total_events`, `schedule_id`, `schedule_name`
+
+### Sensors
+| Entity | State | Attributes |
+|--------|-------|------------|
+| `sensor.yodeck_schedules` | Schedule count | ID → name map |
+| `sensor.yodeck_screens` | Screen count | ID → name map |
+| `sensor.yodeck_media` | Media count | ID → name map |
+| `sensor.yodeck_playlists` | Playlist count | ID → name map |
+| `sensor.yodeck_layouts` | Layout count | ID → name map |
+
+### Select Entities (searchable dropdowns)
+| Entity | Options |
+|--------|---------|
+| `select.yodeck_schedule` | All your YoDeck schedules |
+| `select.yodeck_screen` | All your YoDeck screens |
+| `select.yodeck_media` | All media files |
+| `select.yodeck_playlist` | All playlists |
+| `select.yodeck_layout` | All layouts |
+| `select.yodeck_content` | All content combined with type prefix (`media: …`, `playlist: …`, `layout: …`) |
+
+### Calendar
+One per schedule — `calendar.yodeck_{schedule_name}`
+
+Shows all events (including recurring) in the HA calendar UI.
+
+### Button
+- `button.yodeck_refresh` — force an immediate data refresh
+
+---
+
+## Services
+
+### `yodeck.add_schedule_event`
+Add an event to a YoDeck schedule and push it to a screen.
+
+| Field | Description |
+|-------|-------------|
+| `schedule` | Schedule (use `select.yodeck_schedule` or enter name/ID) |
+| `content` | Content (use `select.yodeck_content` — auto-detects type from prefix) |
+| `content_type` | Optional — only needed when typing a plain name/ID directly |
+| `duration_preset` | Quick options: `today`, `1h`, `2h`, `4h`, `8h`, `12h`, `24h`, `3d`, `1w` |
+| `start_datetime` | Start time (used when no preset) |
+| `end_datetime` | End time (used when no preset) |
+| `recurrence_type` | `once`, `daily`, `weekday`, `weekly`, `monthly`, `annually` |
+| `priority` | 0–10 (default 5) |
+| `screen` | Screen to push to (use `select.yodeck_screen` or enter name/ID) |
+| `delay` | Seconds to wait before pushing (0–10) |
+
+### `yodeck.schedule_from_calendar_event`
+Find an event in any HA calendar and schedule YoDeck content around it.
+
+| Field | Description |
+|-------|-------------|
+| `calendar_entity` | Any HA calendar entity (Google Calendar, holiday calendars, etc.) |
+| `event_name` | Partial, case-insensitive search (e.g. `father` matches `Father's Day`) |
+| `days_before` | Days before the event to start showing content (default 0) |
+| `days_after` | Days after the event ends to stop showing content (default 0) |
+| `look_ahead_days` | How far ahead to search (default 365) |
+| `schedule` | YoDeck schedule to update |
+| `content` | Content to show |
+| `screen` | Screen to push to |
+
+### List services
+`yodeck.list_schedules`, `yodeck.list_media`, `yodeck.list_playlists`, `yodeck.list_layouts`, `yodeck.list_monitors` — log all available items with their IDs.
+
+---
 
 ## Installation
 
 ### HACS (Recommended)
 
-1. Open HACS in Home Assistant
-2. Click on "Integrations"
-3. Click the three dots in the top right corner
-4. Select "Custom repositories"
-5. Add the repository URL: `https://github.com/yourusername/yodeck-ha`
-6. Select category: "Integration"
-7. Click "Add"
-8. Find "YoDeck" in the integration list and click "Download"
-9. Restart Home Assistant
+1. Open HACS → **Integrations**
+2. Click the three dots → **Custom repositories**
+3. Add `https://github.com/thespica93/Yodeck-Home-Assistant-Integration` as an **Integration**
+4. Find **YoDeck** and click **Download**
+5. Restart Home Assistant
 
-### Manual Installation
+### Manual
 
-1. Copy the `custom_components/yodeck` directory to your Home Assistant's `custom_components` directory
-2. Restart Home Assistant
+Copy the `custom_components/yodeck` folder into your HA `custom_components` directory and restart.
+
+---
 
 ## Configuration
 
-1. Go to **Settings** → **Devices & Services**
-2. Click **+ Add Integration**
-3. Search for "YoDeck"
-4. Enter your YoDeck API token
+1. Go to **Settings → Devices & Services → Add Integration**
+2. Search for **YoDeck**
+3. Enter your API token
 
-### Getting Your API Token
+### Getting your API token
 
-1. Log in to your [YoDeck account](https://yodeck.com)
-2. Click on **Account** in the top navigation bar
-3. Select **Account Settings** from the menu
-4. In the **Advanced Settings** section, click **API Tokens**
-5. Click **Generate Token**
-6. Enter a name for the token (e.g., "Home Assistant")
-7. Select a role (the token will have the permissions of that role)
-8. Click **Create Token**
-9. **Copy the token** and save it securely (you won't be able to see it again!)
+1. Log in to [yodeck.com](https://yodeck.com)
+2. **Account → Account Settings → Advanced Settings → API Tokens**
+3. Click **Generate Token**, give it a name, select a role, click **Create Token**
+4. Copy the token immediately — it won't be shown again
 
-## Usage Examples
+### Options
 
-### Automate TV Power Based on Schedule
+After setup, click **Configure** on the integration to change the poll interval (minimum 5 minutes, default 60 minutes).
 
-Turn on your TV outlet when something is scheduled, turn it off when nothing is scheduled:
+---
+
+## Automation Examples
+
+### Turn on TV when content is scheduled
 
 ```yaml
 automation:
-  - alias: "Turn on TV when YoDeck has scheduled content"
+  - alias: TV on when YoDeck is active
     trigger:
-      - platform: state
-        entity_id: binary_sensor.yodeck_schedule_1
-        to: "on"
+      platform: state
+      entity_id: binary_sensor.yodeck_main_schedule
+      to: "on"
     action:
-      - service: switch.turn_on
-        target:
-          entity_id: switch.tv_outlet
-
-  - alias: "Turn off TV when YoDeck schedule is empty"
-    trigger:
-      - platform: state
-        entity_id: binary_sensor.yodeck_schedule_1
-        to: "off"
-    action:
-      - service: switch.turn_off
-        target:
-          entity_id: switch.tv_outlet
+      service: switch.turn_on
+      target:
+        entity_id: switch.tv_outlet
 ```
 
-### Single Automation (Simpler)
+### Schedule holiday content from Google Calendar
 
 ```yaml
 automation:
-  - alias: "Control TV based on YoDeck schedule"
+  - alias: Schedule Father's Day content
     trigger:
-      - platform: state
-        entity_id: binary_sensor.yodeck_schedule_1
+      platform: time
+      at: "00:01:00"
     action:
-      - service: "switch.turn_{{ 'on' if trigger.to_state.state == 'on' else 'off' }}"
-        target:
-          entity_id: switch.tv_outlet
+      service: yodeck.schedule_from_calendar_event
+      data:
+        calendar_entity: calendar.google_holidays_in_united_states
+        event_name: "father"
+        days_before: 1
+        days_after: 1
+        schedule: Main Schedule
+        content: select.yodeck_content
+        screen: select.yodeck_screen
 ```
 
-### Show Schedule Card
-
-Display current schedule status and what's playing today:
-
-```yaml
-type: entities
-entities:
-  - entity: binary_sensor.yodeck_schedule_1
-    secondary_info: last-changed
-  - type: attribute
-    entity: binary_sensor.yodeck_schedule_1
-    attribute: active_events_today
-    name: Events Today
-  - type: attribute
-    entity: binary_sensor.yodeck_schedule_1
-    attribute: active_events
-    name: Scheduled Content
-```
-
-## API Rate Limits
-
-The YoDeck API has rate limiting:
-- **Free tier**: 14 requests per 10 seconds per token
-- **Standard tier**: 21 requests per 10 seconds per token
-- **High tier**: 33 requests per 10 seconds per token
-
-This integration polls every 5 minutes by default, which is well within all rate limits.
+---
 
 ## Troubleshooting
 
-### Integration Not Showing Schedules
+**Integration not showing schedules**
+- Verify your API token is correct
+- Enable debug logging: `custom_components.yodeck: debug` in `configuration.yaml`
 
-1. Verify your API token is correct
-2. Check that your YoDeck account has schedules configured
-3. Enable debug logging to see API responses:
+**Sensors unavailable**
+- Check internet connectivity and that the YoDeck API is reachable
+- Press `button.yodeck_refresh` to force a data reload
 
-```yaml
-logger:
-  default: warning
-  logs:
-    custom_components.yodeck: debug
-```
+**Service dropdown is empty**
+- The select entities populate on the first coordinator refresh — press `button.yodeck_refresh` if they appear empty after install
 
-### Sensors Showing "Unavailable"
+---
 
-- Check your internet connection
-- Verify the YoDeck API is accessible
-- Check Home Assistant logs for error messages
+## API Rate Limits
 
-## Supported YoDeck Features
+- Free tier: 14 requests / 10 seconds
+- Standard tier: 21 requests / 10 seconds
+- High tier: 33 requests / 10 seconds
 
-- ✅ Schedule monitoring
-- ✅ Active event detection (today's scheduled content)
-- ✅ Event details (name, type, priority, duration)
-- 🚧 Schedule management (create/edit schedules - planned)
-- 🚧 Screen status monitoring (planned)
-- 🚧 Content management (planned)
+The integration fetches all resource types in a single parallel burst per refresh cycle, well within all tier limits.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+---
 
 ## Disclaimer
 
 This integration is not officially affiliated with or endorsed by YoDeck. YoDeck is a trademark of YoKenSoft Ltd.
 
-## Support
+## License
 
-- 🐛 [Report a Bug](https://github.com/yourusername/yodeck-ha/issues)
-- 💡 [Request a Feature](https://github.com/yourusername/yodeck-ha/issues)
-- 📖 [YoDeck API Documentation](https://api.yodeck.com/)
+MIT — see [LICENSE](LICENSE)
