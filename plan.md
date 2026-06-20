@@ -15,7 +15,9 @@
 - [x] Rate limit handling (HTTP 429 + Retry-After)
 - [x] Constants file (`const.py`)
 - [x] HACS compatibility — `manifest.json`, `icon.png`, `hacs.json`
-- [x] Version 0.2.0
+- [x] Icon at `custom_components/yodeck/icon.png` for HA integration card
+- [x] GitHub releases for HACS auto-update detection
+- [x] Version 0.3.0
 
 ### Platforms
 - [x] **Sensor** — 5 sensors: Schedules, Screens, Media, Playlists, Layouts (count + ID→name map in attributes)
