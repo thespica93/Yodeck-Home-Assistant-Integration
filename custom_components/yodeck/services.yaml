@@ -54,11 +54,12 @@ schedule_from_calendar_event:
           unit_of_measurement: days
     schedule:
       name: Schedule
-      description: "YoDeck schedule ID or name to add the event to"
+      description: "Select your YoDeck schedule from the dropdown (populated from select.yodeck_schedule)"
       required: true
-      example: Main Schedule
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_schedule
     content_type:
       name: Content Type
       description: Type of YoDeck content to schedule
@@ -74,18 +75,22 @@ schedule_from_calendar_event:
               value: layout
     content:
       name: Content
-      description: "YoDeck content ID or name to display"
+      description: "Select your content — pick select.yodeck_media, select.yodeck_playlist, or select.yodeck_layout to match your Content Type"
       required: true
-      example: Christmas Promo Video
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_media
+            - select.yodeck_playlist
+            - select.yodeck_layout
     screen:
       name: Screen
-      description: "Screen ID or name to push the update to"
+      description: "Select which screen to push to (populated from select.yodeck_screen)"
       required: true
-      example: Outdoor Screen
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_screen
     priority:
       name: Priority
       description: Event priority (higher numbers have higher priority)
@@ -133,11 +138,12 @@ add_schedule_event:
   fields:
     schedule:
       name: Schedule
-      description: "Enter schedule ID or name (e.g., '1368183' or 'Main Schedule')"
+      description: "Select your YoDeck schedule from the dropdown (populated from select.yodeck_schedule)"
       required: true
-      example: Main Schedule
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_schedule
     content_type:
       name: Content Type
       description: Type of content to schedule
@@ -153,11 +159,14 @@ add_schedule_event:
               value: layout
     content:
       name: Content
-      description: "Enter content ID or name (e.g., '28803949' or 'New Years Day Video')"
+      description: "Select your content — pick select.yodeck_media, select.yodeck_playlist, or select.yodeck_layout to match your Content Type"
       required: true
-      example: New Years Day Video
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_media
+            - select.yodeck_playlist
+            - select.yodeck_layout
     duration_preset:
       name: Duration Preset
       description: "Quick duration options — automatically sets the end time. If set, End Date & Time is ignored. Leave blank to set start and end manually."
@@ -241,11 +250,12 @@ add_schedule_event:
           mode: slider
     screen:
       name: Screen
-      description: "Enter screen ID or name to push the schedule update to (e.g., '577697' or 'Outdoor Screen'). You can find available screens in the sensor.yodeck_screens entity."
+      description: "Select which screen to push to (populated from select.yodeck_screen)"
       required: true
-      example: Outdoor Screen
       selector:
-        text:
+        entity:
+          include_entities:
+            - select.yodeck_screen
     delay:
       name: Delay Before Push
       description: "Optional delay in seconds (0-10) to wait after updating the schedule before pushing to the screen. Use 0 for no delay (default), or try 2-3 seconds if the screen doesn't update immediately."

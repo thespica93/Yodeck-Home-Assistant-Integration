@@ -20,7 +20,7 @@ from .coordinator import YoDeckDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
+PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.BUTTON, Platform.CALENDAR, Platform.SELECT, Platform.SENSOR]
 
 SERVICE_ADD_SCHEDULE_EVENT = "add_schedule_event"
 SERVICE_SCHEDULE_FROM_CALENDAR = "schedule_from_calendar_event"
@@ -56,6 +56,19 @@ SERVICE_ADD_SCHEDULE_EVENT_SCHEMA = vol.Schema({
     vol.Required("screen"): cv.string,  # Accept ID or name
     vol.Optional("delay", default=0): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
 })
+
+
+def _resolve_select_entity(value: str, hass: HomeAssistant) -> str:
+    """If value is a select entity_id, return its current state; otherwise return as-is.
+
+    Allows service fields to accept either a plain name/ID string or a
+    select.yodeck_* entity_id — whichever the UI or automation provides.
+    """
+    if "." in value:
+        state = hass.states.get(value)
+        if state and state.state not in ("unknown", "unavailable", ""):
+            return state.state
+    return value
 
 
 def _resolve_id_or_name(value: str, items: list[dict[str, Any]], item_type: str) -> int:
@@ -264,10 +277,10 @@ async def _handle_schedule_from_calendar_event(call: ServiceCall, hass: HomeAssi
     days_before = call.data.get("days_before", 0)
     days_after = call.data.get("days_after", 0)
     look_ahead_days = call.data.get("look_ahead_days", 365)
-    schedule_input = call.data["schedule"]
+    schedule_input = _resolve_select_entity(call.data["schedule"], hass)
     content_type = call.data["content_type"]
-    content_input = call.data["content"]
-    screen_input = call.data["screen"]
+    content_input = _resolve_select_entity(call.data["content"], hass)
+    screen_input = _resolve_select_entity(call.data["screen"], hass)
     priority = call.data.get("priority", 5)
     delay = call.data.get("delay", 0)
 
@@ -431,13 +444,13 @@ async def _handle_schedule_from_calendar_event(call: ServiceCall, hass: HomeAssi
 
 async def _handle_add_schedule_event(call: ServiceCall, hass: HomeAssistant) -> None:
     """Handle the add_schedule_event service call."""
-    schedule_input = call.data["schedule"]
+    schedule_input = _resolve_select_entity(call.data["schedule"], hass)
     content_type = call.data["content_type"]
-    content_input = call.data["content"]
+    content_input = _resolve_select_entity(call.data["content"], hass)
     recurrence_type = call.data["recurrence_type"]
     priority = call.data.get("priority", 5)
     # fitting = call.data.get("fitting", "fit")  # Not working yet
-    screen_input = call.data["screen"]
+    screen_input = _resolve_select_entity(call.data["screen"], hass)
     delay = call.data.get("delay", 0)
     duration_preset = call.data.get("duration_preset")
 
