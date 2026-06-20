@@ -27,11 +27,11 @@
 - [x] **Calendar** — one calendar entity per schedule; expands recurring events into HA calendar UI; handles all recurrence types
 
 ### Services
-- [x] `list_schedules` — logs all schedule IDs and names
-- [x] `list_media` — logs all media IDs, names, and types
-- [x] `list_playlists` — logs all playlist IDs and names
-- [x] `list_layouts` — logs all layout IDs and names
-- [x] `list_monitors` — logs all screen IDs, names, and assigned schedules
+- [x] `list_schedules` — fires persistent notification with all schedule IDs and names
+- [x] `list_media` — fires persistent notification with all media IDs and names
+- [x] `list_playlists` — fires persistent notification with all playlist IDs and names
+- [x] `list_layouts` — fires persistent notification with all layout IDs and names
+- [x] `list_monitors` — fires persistent notification with all screen IDs and names
 - [x] `add_schedule_event` — adds an event to a schedule and pushes to a screen
   - [x] Accepts ID or friendly name for schedule, content, and screen
   - [x] `duration_preset` shortcuts (today, 1h, 2h, 4h, 8h, 12h, 24h, 3d, 1w)
@@ -59,7 +59,8 @@
 
 ## Pending / In Progress
 
-### Bug Fixes
+### Bug Fixes — START HERE NEXT SESSION
+- [ ] **`list_*` notifications not appearing** — `list_schedules`, `list_media`, etc. now call `persistent_notification.create` but the popups are not showing in HA. Investigate why and fix before anything else. (v0.5.0, session ended here)
 - [ ] **Fitting options** (`fit` / `crop` / `stretch`) — commented out; YoDeck API field name/values need investigation before re-enabling
 
 ### Improvements
@@ -68,7 +69,6 @@
 - [ ] **`delete_schedule_event` service** — remove a specific event from a schedule by index or content name
 - [ ] **`clear_schedule` service** — remove all events from a schedule (useful for resetting)
 - [ ] **`create_schedule` service** — create a brand-new schedule via API
-- [ ] **`list_*` services return persistent notifications** — instead of only logging, surface results as HA persistent notifications so users can see them in the UI without checking logs
 
 #### Sensors / Entities
 - [ ] **Active-content sensor per schedule** — a sensor (or binary_sensor attribute) that shows exactly what content is playing right now on each schedule (name, type, time remaining)
