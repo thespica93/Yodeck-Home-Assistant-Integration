@@ -170,8 +170,8 @@ def _merge_or_append_event(
         if event.get("source", {}).get("source_id") != content_id:
             continue
         try:
-            ev_start = datetime.fromisoformat(event["start"])
-            ev_end = datetime.fromisoformat(event["end"])
+            ev_start = datetime.fromisoformat(event["start"]).replace(tzinfo=None)
+            ev_end = datetime.fromisoformat(event["end"]).replace(tzinfo=None)
         except (KeyError, ValueError):
             continue
         # <= so that touching/adjacent events are also merged
