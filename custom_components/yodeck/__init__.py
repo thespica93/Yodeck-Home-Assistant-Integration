@@ -174,8 +174,7 @@ def _merge_or_append_event(
             ev_end = datetime.fromisoformat(event["end"]).replace(tzinfo=None)
         except (KeyError, ValueError):
             continue
-        # <= so that touching/adjacent events are also merged
-        if start <= ev_end and ev_start <= end:
+        if start < ev_end and ev_start < end:
             new_duration = int((end - start).total_seconds() / 60)
             updated[i] = {
                 **event,
