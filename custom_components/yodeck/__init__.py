@@ -174,13 +174,20 @@ def _merge_or_append_event(
             ev_end = datetime.fromisoformat(event["end"]).replace(tzinfo=None)
         except (KeyError, ValueError):
             continue
-        if start < ev_end and ev_start < end:
-            new_duration = int((end - start).total_seconds() / 60)
+        if start <= ev_end and ev_start <= end:
+            if ev_end.year >= 2040:
+                # Far-future sentinel (e.g. YoDeck's 2050 "no end" date) — replace entirely
+                merged_start, merged_end = start, end
+            else:
+                # Adjacent or overlapping normal event — extend to cover the union
+                merged_start = min(ev_start, start)
+                merged_end = max(ev_end, end)
+            merged_duration = int((merged_end - merged_start).total_seconds() / 60)
             updated[i] = {
                 **event,
-                "start": start.isoformat(),
-                "end": end.isoformat(),
-                "duration": new_duration,
+                "start": merged_start.isoformat(),
+                "end": merged_end.isoformat(),
+                "duration": merged_duration,
             }
             return updated, True
     return updated + [new_event], False
