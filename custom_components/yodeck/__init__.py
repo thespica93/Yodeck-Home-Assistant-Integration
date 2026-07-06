@@ -176,14 +176,12 @@ def _merge_or_append_event(
             continue
         # <= so that touching/adjacent events are also merged
         if start <= ev_end and ev_start <= end:
-            merged_start = min(ev_start, start)
-            merged_end = max(ev_end, end)
-            merged_duration = int((merged_end - merged_start).total_seconds() / 60)
+            new_duration = int((end - start).total_seconds() / 60)
             updated[i] = {
                 **event,
-                "start": merged_start.isoformat(),
-                "end": merged_end.isoformat(),
-                "duration": merged_duration,
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+                "duration": new_duration,
             }
             return updated, True
     return updated + [new_event], False
